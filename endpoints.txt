@@ -1,0 +1,11 @@
+1.  fetch all comments of a single post
+2. like a post
+3. post a post
+4. fetch all posts
+5. fetch a single post
+6. fetch all likes of a certain post
+7. like a post
+8. unlike a post
+9. comment on a posts
+10. delete a post
+11. delete a comment
