@@ -7,6 +7,7 @@ import { MessageCircle, Repeat2, Send, ThumbsUpIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CommentOpen from "./CommentOpen";
 import CommentForm from "./CommentForm";
+import { toast } from "sonner";
 
 const PostOptions = ({ post }: { post: Post }) => {
   const [isCommentOpen, setCommentOpen] = useState(false);
@@ -93,7 +94,12 @@ const PostOptions = ({ post }: { post: Post }) => {
         <div className="flex">
           <Button
             variant="ghost"
-            onClick={handleLikeorUnlike}
+            onClick={() => {
+              const promise = handleLikeorUnlike();
+              toast.promise(promise, {
+                error: "Error liking the post",
+              });
+            }}
             className=" flex justify-between p-4"
           >
             <ThumbsUpIcon

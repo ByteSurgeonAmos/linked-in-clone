@@ -98,7 +98,7 @@ export async function DELETE(
 }
 
 export async function GET(
-  req: NextApiRequest,
+  req: Request,
   { params }: { params: { post_id: string } }
 ) {
   try {
