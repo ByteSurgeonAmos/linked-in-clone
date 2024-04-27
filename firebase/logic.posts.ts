@@ -3,6 +3,7 @@ import {
   addDoc,
   getDocs,
   getDoc,
+  setDoc,
   doc,
   updateDoc,
   DocumentSnapshot,
@@ -12,62 +13,64 @@ import { db } from "./firebase.config";
 import { v4 as uuidv4 } from "uuid";
 
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { deleteObject } from "firebase/storage";
 
 export interface Post {
   id: string;
   userId: string;
   text: string;
+  userName: string;
   imageUrl?: string;
+  userImageURL: string;
   createdAt: Date;
-  likes: string[]; // Array of user IDs who liked the post
+  likes: string[];
   comments: Comment[];
 }
 
-interface Comment {
+export interface Comment {
   id: string;
   userId: string;
   text: string;
+  userName: string;
+  userImageURL: string;
   createdAt: Date;
 }
 
 export const createPost = async (
   userId: string,
+  userName: string,
+  userImageURL: string,
   text: string,
-  imageFile?: File
-): Promise<any | null> => {
+  imageFile?: File | undefined
+): Promise<string | null> => {
   try {
     let imageUrl: string | null = null;
     if (imageFile) {
-      console.log(imageFile);
-
       const storage = getStorage();
       const uniqueFilename = uuidv4();
       const storageRef = ref(storage, `images/${uniqueFilename}`);
-      try {
-        const snapshot = await uploadBytes(storageRef, imageFile);
 
-        imageUrl = await getDownloadURL(snapshot.ref);
-      } catch (error) {
-        console.log(error);
-      }
+      const snapshot = await uploadBytes(storageRef, imageFile);
+
+      imageUrl = await getDownloadURL(snapshot.ref);
     }
-    console.log("Hello world1");
 
-    const docRef = await addDoc(collection(db, "posts"), {
+    const newPostRef = doc(collection(db, "posts"));
+
+    await setDoc(newPostRef, {
       userId,
       text,
       imageUrl,
+      userImageURL,
+      userName,
       createdAt: new Date(),
       likes: [],
       comments: [],
     });
-    console.log("Hello world2");
 
-    console.log(docRef);
-
-    return docRef;
+    return newPostRef.id;
   } catch (error) {
-    console.error("Error creating post: ", error);
+    console.error("Error creating post:", error);
     return null;
   }
 };
@@ -101,14 +104,18 @@ export const toggleLike = async (
 export const addComment = async (
   postId: string,
   userId: string,
-  text: string
+  userImageURL: string,
+  text: string,
+  userName: string
 ): Promise<string | null> => {
   try {
     const commentRef = await addDoc(
       collection(db, `posts/${postId}/comments`),
       {
         userId,
+        userImageURL,
         text,
+        userName,
         createdAt: new Date(),
       }
     );
@@ -118,11 +125,52 @@ export const addComment = async (
     return null;
   }
 };
-export const deletePost = async (postId: string): Promise<void> => {
+
+export const getCommentsByPostId = async (
+  postId: string
+): Promise<Comment[]> => {
+  try {
+    const commentsSnapshot = await getDocs(
+      collection(db, `posts/${postId}/comments`)
+    );
+    const comments: Comment[] = [];
+    commentsSnapshot.forEach((doc) => {
+      const commentData = doc.data();
+      if (commentData) {
+        comments.push({
+          id: doc.id,
+          userId: commentData.userId,
+          text: commentData.text,
+          userImageURL: commentData.userImageURL,
+          userName: commentData.userName,
+          createdAt: commentData.createdAt.toDate(),
+        });
+      }
+    });
+    return comments;
+  } catch (error) {
+    console.error("Error getting comments: ", error);
+    return [];
+  }
+};
+
+export const deletePost = async (
+  postId: string,
+  imageUrl?: string
+): Promise<{ message: string } | void> => {
   try {
     const postRef = doc(db, "posts", postId);
     await deleteDoc(postRef);
+
     console.log("Post deleted successfully");
+
+    if (imageUrl) {
+      const storage = getStorage();
+      const imageRef = ref(storage, imageUrl);
+      await deleteObject(imageRef);
+      console.log("Image file deleted successfully");
+    }
+    return { message: "Post deleted succesfully" };
   } catch (error) {
     console.error("Error deleting post: ", error);
     throw error;
@@ -144,7 +192,8 @@ export const getPostById = async (postId: string): Promise<Post | null> => {
   try {
     const docRef = doc(db, "posts", postId);
     const docSnapshot: DocumentSnapshot = await getDoc(docRef);
-    if (!docSnapshot.exists) {
+
+    if (docSnapshot.exists()) {
       const postData = docSnapshot.data();
 
       return {
@@ -152,7 +201,9 @@ export const getPostById = async (postId: string): Promise<Post | null> => {
         userId: postData?.userId,
         text: postData?.text,
         imageUrl: postData?.imageUrl,
-        createdAt: postData?.createdAt,
+        userImageURL: postData?.userImageURL,
+        userName: postData?.userName,
+        createdAt: postData?.createdAt.toDate(),
         likes: postData?.likes,
         comments: postData?.comments,
       };
@@ -172,15 +223,19 @@ export const getPosts = async (): Promise<Post[]> => {
     const posts: Post[] = [];
     querySnapshot.forEach((doc) => {
       const postData = doc.data();
-      posts.push({
-        id: doc.id,
-        userId: postData.userId,
-        text: postData.text,
-        imageUrl: postData.imageUrl,
-        createdAt: postData.createdAt,
-        likes: postData.likes,
-        comments: postData.comments,
-      });
+      if (postData) {
+        posts.push({
+          id: doc.id,
+          userId: postData.userId,
+          text: postData.text,
+          imageUrl: postData.imageUrl,
+          userImageURL: postData.userImageURL,
+          userName: postData.userName,
+          createdAt: postData.createdAt.toDate(),
+          likes: postData.likes || [],
+          comments: postData.comments,
+        });
+      }
     });
     return posts;
   } catch (error) {

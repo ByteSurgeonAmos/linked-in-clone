@@ -2,11 +2,13 @@ import { currentUser } from "@clerk/nextjs/server";
 import { AvatarFallback, AvatarImage, Avatar } from "./ui/avatar";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Button } from "./ui/button";
-export const UserInformation = async () => {
+import { Post } from "@/firebase/logic.posts";
+export const UserInformation = async ({ posts }: { posts: Post[] }) => {
   const user = await currentUser();
   const firstName = user?.firstName;
   const lastName = user?.lastName;
   const imageUrl = user?.imageUrl;
+  const userPosts = posts.filter((post: Post) => post.userId === user?.id);
 
   return (
     <div className="flex flex-col justify-center items-center bg-white mr-6 rounded-lg border py-6">
@@ -46,7 +48,7 @@ export const UserInformation = async () => {
       <hr className="w-full border-gray-200 my-5" />
       <div className="flex justify-between w-full px-4 text-sm">
         <p className="font-semibold text-gray-400">Posts</p>
-        <p className=" text-blue-400">0</p>
+        <p className=" text-blue-400">{userPosts.length}</p>
       </div>
       <div className="flex justify-between w-full px-4 text-sm">
         <p className="font-semibold text-gray-400">Comments</p>

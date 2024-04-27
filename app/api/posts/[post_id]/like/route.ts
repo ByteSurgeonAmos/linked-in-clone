@@ -4,13 +4,13 @@ import { NextResponse } from "next/server";
 
 export const PUT = async (
   request: Request,
-  { params, body }: { params: { post_id: string }; body: { isLiked: boolean } }
+  { params }: { params: { post_id: string } }
 ) => {
   auth().protect();
   const user = await currentUser();
 
   const postId = params.post_id;
-  const isLiked = body.isLiked;
+  const { isLiked } = await request.json();
 
   try {
     await toggleLike(postId, user?.id ?? "", isLiked);

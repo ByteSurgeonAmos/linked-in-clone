@@ -6,13 +6,20 @@ export async function POST(request: Request) {
     auth().protect();
     const user = await currentUser();
     const userId = user?.id ?? "";
+    const userImageURL = user?.imageUrl ?? "";
+    const userName = user?.fullName ?? "";
 
     const formData = await request.formData();
     const postInput = formData.get("postInput")?.toString() || "";
     const imageFile = formData.get("imageFile") as File | undefined;
-
-    const post = await createPost(userId, postInput, imageFile);
-    console.log(imageFile);
+    const text = postInput;
+    const post = await createPost(
+      userId,
+      userName,
+      userImageURL,
+      text,
+      imageFile
+    );
     if (post !== null) {
       return NextResponse.json(
         {

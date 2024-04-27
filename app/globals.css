@@ -9,6 +9,9 @@
       .icon svg {
          @apply fill-white stroke-gray-300
       }
+      .postButton{
+        @apply flex justify-center flex-1
+      }
   }
   @layer base {
     

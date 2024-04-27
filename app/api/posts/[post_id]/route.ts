@@ -34,6 +34,7 @@ export async function DELETE(
 
   try {
     const post = await getPostById(postId);
+
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }

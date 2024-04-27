@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { ImageIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 const PostForm = () => {
   const { user } = useUser();
@@ -37,17 +38,15 @@ const PostForm = () => {
       }
       console.log(formData);
 
-      const response = await fetch("/api/posts", {
+      const promise = await fetch("/api/posts", {
         method: "POST",
         body: formData,
       });
-      console.log(response);
 
-      if (!response.ok) {
+      if (!promise.ok) {
         throw new Error("Failed to create post");
       }
 
-      // Reset form and preview after successful post
       setText("");
       setImage(undefined);
       setPreview(null);
@@ -86,7 +85,17 @@ const PostForm = () => {
             hidden
             onChange={handleImageChange}
           />
-          <button type="button" onClick={handlePostAction}>
+          <button
+            type="button"
+            onClick={() => {
+              const promise = handlePostAction();
+              toast.promise(promise, {
+                loading: "Creating post...",
+                success: "Post created successfully",
+                error: "Failed to create post",
+              });
+            }}
+          >
             Post
           </button>
         </div>
